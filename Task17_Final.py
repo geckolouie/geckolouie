@@ -8,11 +8,14 @@ import os
 # Source: https://www.programiz.com/python-programming/datetime 
 import datetime
 
-# Function to create the 'user.txt' file if it doesn't exist:
-def create_user_file():
-    if not os.path.exists("user.txt"):
-        with open("user.txt", "w") as file:
-            file.write("admin;password\n")  # Writes admin user and password to the file.
+# Function to create the 'user.txt' or 'tasks.txt' file if it doesn't exist:
+def create_files():
+    if not (os.path.exists("user.txt") and os.path.exists("tasks.txt")):
+        with open("user.txt", "w"):
+            pass
+
+        with open("tasks.txt", "w"):
+            pass
 
 def is_admin(curr_user):
     ''' Takes in the input of the curr_user,
@@ -23,7 +26,7 @@ def is_admin(curr_user):
 
 # Function which allows users to login: distinguishing between user admin and regular user:
 def login():
-    create_user_file()
+    create_files()
     # Reads usernames from user.txt file.
     with open("user.txt", "r") as file:
         users = {line.strip().split(";")[0]: line.strip().split(";")[1] for line in file}
@@ -53,10 +56,15 @@ def reg_user():
     password = input("Enter your password: ")
 
     with open("user.txt", "r") as file:
-        if username in file.read():
-            print("Username already exists. Please try again.")
-            return reg_user()
-        
+        # Read each line in the file and check if the username exists as a full word
+        for line in file:
+            # Fixes the issue of the function reading substrings as existing usernames
+            # Source: https://www.pythonforbeginners.com/files/the-fastest-way-to-split-a-text-file-using-python 
+            existing_username = line.strip().split(";")[0].strip()
+            if username == existing_username:
+                print("Username already exists. Please try again.")
+                return reg_user()
+
     with open("user.txt", "a") as file:
         file.write(f"{username}; {password}\n")
 
@@ -68,13 +76,16 @@ def add_task():
     task_user = input("Enter your username: ")
     task_name = input("Enter the task name: ")
     task_description = input("Enter the task description: ")
-    assigned_date = input("Enter the assigned date (DD-MM-YYYY): ")
+    
+    # Uses current date instead of asking for user input.
+    # Source: https://www.programiz.com/python-programming/datetime/current-datetime 
+    assigned_date = datetime.date.today().strftime("%d-%m-%Y")
+    
     due_date = input("Enter the due date (DD-MM-YYYY): ")
 
     try:
-        datetime.datetime.strptime(assigned_date, "%d-%m-%Y")
-        datetime.datetime.strptime(due_date, "%d-%m-%Y")   # Utilises the datetime module to ensure correct formatting of date input
-    except ValueError:  # Raises error if invalid date input
+        datetime.datetime.strptime(due_date, "%d-%m-%Y")   # Utilizes the datetime module to ensure correct formatting of the due date input
+    except ValueError:  # Raises an error if an invalid due date input
         print("Invalid date format. Please enter the date in the format DD-MM-YYYY.")
         add_task()
         return
@@ -95,6 +106,10 @@ def view_all():
             print(f"{i}. {task.strip()}")
     else:
         print("No tasks available.")
+
+# Function to check if a task is complete
+def is_task_complete(task):
+    return "[Complete]" in task
 
 # Function which allows a user to view and edit their assigned tasks:
 def view_mine():
@@ -117,7 +132,7 @@ def view_mine():
         task = tasks[task_number - 1].strip()
         print(f"Selected task: {task}")
 
-        if "[Complete]" in task:
+        if is_task_complete(task):
             print("This task is already marked as complete and cannot be edited.")
             view_mine()
             return
@@ -279,5 +294,5 @@ Quit ('q')''')
         print("Invalid user choice! Please try another option...")
         menu(curr_user)
 
-create_user_file()
+create_files()
 login()
